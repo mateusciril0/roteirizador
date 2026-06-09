@@ -29,7 +29,29 @@
     .modal{width:min(980px,96vw);max-height:92vh;overflow:auto;background:#111317;border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
     .modal-head{position:sticky;top:0;background:#111317;border-bottom:1px solid var(--line);padding:14px 16px;display:flex;justify-content:space-between;gap:10px;align-items:center;z-index:2}
     .modal-head h3{margin:0;font-size:1rem}.modal-body{padding:16px}.modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.modal-actions .btn{min-width:130px}.tech-actions{display:flex;gap:6px;flex-wrap:wrap}.tech-actions .btn{padding:7px 9px;font-size:.72rem}
-    @media(max-width:1180px){body{overflow:auto}.app{display:block;height:auto}.side{max-height:none}.cols2,.cols3,.mapgrid,.formgrid{grid-template-columns:1fr}.span2{grid-column:span 1}.overlay{grid-template-columns:repeat(2,minmax(0,1fr))}.route-side{height:auto}.routes-scroll{max-height:420px}.unallocated-card .tablewrap{max-height:320px}}
+
+
+    /* Tela Técnicos - layout operacional */
+    .tecs-layout{grid-template-columns:1.45fr .55fr;align-items:start}
+    .tech-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+    .tech-kpi{background:#0b0d10;border:1px solid var(--line);border-radius:14px;padding:10px}
+    .tech-kpi span{display:block;color:var(--muted);font-size:.67rem;font-weight:950;text-transform:uppercase;letter-spacing:.02em}
+    .tech-kpi b{display:block;font-size:1.15rem;margin-top:4px}
+    .tech-toolbar{display:grid;grid-template-columns:1.2fr .75fr .75fr;gap:8px;align-items:end;margin-bottom:10px}
+    .tech-toolbar .field{margin-bottom:0}
+    .tech-bulk{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+    .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--green)}
+    .status-dot.inativo{background:var(--red)}.status-dot.ausente{background:var(--yellow)}
+    .tech-row-inactive{opacity:.55;background:rgba(239,68,68,.035)}
+    .tech-row-absent{background:rgba(245,158,11,.035)}
+    .tech-tablewrap{max-height:610px}
+    .tech-table td:first-child,.tech-table th:first-child{text-align:center;width:64px}
+    .tech-status-actions{display:grid;gap:6px;min-width:116px}
+    .tech-actions .btn,.tech-status-actions .btn{white-space:nowrap}
+    .btn.xs{padding:6px 8px;font-size:.68rem;border-radius:9px}
+    .origin-panel{position:sticky;top:0}
+
+    @media(max-width:1180px){body{overflow:auto}.app{display:block;height:auto}.side{max-height:none}.cols2,.cols3,.mapgrid,.formgrid,.tecs-layout,.tech-toolbar{grid-template-columns:1fr}.span2{grid-column:span 1}.overlay{grid-template-columns:repeat(2,minmax(0,1fr))}.route-side{height:auto}.routes-scroll{max-height:420px}.tech-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.origin-panel{position:static}.unallocated-card .tablewrap{max-height:320px}}
   </style>
 </head>
 <body>
@@ -81,17 +103,27 @@
         </div>
       </div>
       <div class="screen" id="screen-tecs">
-        <div class="grid cols2">
+        <div class="grid tecs-layout">
           <div class="card">
-            <h3>Técnicos disponíveis</h3>
-            <p>Desmarque técnicos ausentes ou clique em <b>Editar</b> para corrigir origem, área, perfil, capacidade, placa e jornada.</p>
-            <div class="field"><input id="buscaTec" placeholder="Buscar técnico..."></div>
-            <div class="tablewrap"><table id="tabTec"></table></div>
+            <h3>Gestão de técnicos</h3>
+            <p>Use esta área para definir quem está <b>ativo no cadastro</b> e quem será <b>usado na operação de hoje</b>. Técnico inativo não entra na rota; técnico desmarcado fica apenas como ausente do dia.</p>
+            <div class="tech-kpis" id="techKpis"></div>
+            <div class="tech-toolbar">
+              <div class="field"><label>Buscar</label><input id="buscaTec" placeholder="Nome, área, placa, perfil ou origem..."></div>
+              <div class="field"><label>Status</label><select id="filtroStatusTec"><option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option><option value="ausentes">Ausentes hoje</option><option value="base">Usando Base Lapa</option></select></div>
+              <div class="field"><label>Área</label><select id="filtroAreaTec"><option value="todas">Todas as áreas</option></select></div>
+            </div>
+            <div class="tech-bulk">
+              <button class="btn ok" type="button" id="btnAtivarTodos">Ativar todos</button>
+              <button class="btn danger" type="button" id="btnInativarAusentes">Inativar ausentes</button>
+              <button class="btn warn" type="button" id="btnMarcarTodosHoje">Usar todos hoje</button>
+            </div>
+            <div class="tablewrap tech-tablewrap"><table id="tabTec" class="tech-table"></table></div>
           </div>
-          <div class="card">
-            <h3>Resumo de origem</h3>
+          <div class="card origin-panel">
+            <h3>Resumo operacional</h3>
             <div id="origemResumo" class="list"></div>
-            <div class="alert" style="margin-top:12px">Quando você altera latitude/longitude ou áreas de um técnico, a próxima geração de rotas já usa os dados corrigidos. Se deixar latitude/longitude em branco, o sistema volta a usar a Base Lapa.</div>
+            <div class="alert" style="margin-top:12px"><b>Diferença importante:</b><br>• <b>Ativo/Inativo</b> é cadastro operacional e bloqueia a rota.<br>• <b>Usar hoje</b> é disponibilidade diária. Desmarque para falta, folga ou férias pontuais.<br><br>As alterações ficam apenas na sessão atual, sem cache.</div>
           </div>
         </div>
       </div>
@@ -148,7 +180,7 @@ const COLORS=['#ff5a1f','#22c55e','#3b82f6','#a855f7','#f59e0b','#ef4444','#14b8
 const DEFAULT_RULES={pesoAging:36,pesoNivel:18,pesoPrioridade:15,pesoDistancia:27,pesoArea:14,pesoAprendizado:22,raioClusterKm:0.35,tempoAtendimentoMin:45,jornadaMin:600};
 const state={techs:[],tickets:[],routes:[],absent:[],rules:{...DEFAULT_RULES},learn:[],map:null,layer:null,chart:null,selectedRoute:null,roadCache:new Map()};
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function norm(v){return String(v??'').trim()} function low(v){return norm(v).toLowerCase()} function num(v,fb=0){if(typeof v==='number')return isNaN(v)?fb:v;let n=parseFloat(norm(v).replace(',','.'));return isNaN(n)?fb:n}
+function norm(v){return String(v??'').trim()} function low(v){return norm(v).toLowerCase()} function isActiveStatus(v){let s=low(v);return s==='ativo'||s==='active'||s==='disponivel'||s==='disponível'} function num(v,fb=0){if(typeof v==='number')return isNaN(v)?fb:v;let n=parseFloat(norm(v).replace(',','.'));return isNaN(n)?fb:n}
 function getBase(){return {nome:'Base Operacional Lapa',endereco:$('#baseEndereco').value,lat:num($('#baseLat').value,-23.521781),lng:num($('#baseLng').value,-46.705444)}}
 function cleanupLegacyStorage(){try{LEGACY_KEYS.forEach(k=>localStorage.removeItem(k))}catch(e){console.warn('Não foi possível limpar chaves antigas:',e)}}
 function save(){/* Modo seguro Git: não usa localStorage, sessionStorage, IndexedDB nem cookies. */}
@@ -173,14 +205,39 @@ function buildTicketClusters(){let pending=state.tickets.filter(t=>!t.alocado);l
   clusters.sort((a,b)=>(b.lock-a.lock)||(b.prioridade-a.prioridade)||(b.aging-a.aging)||(b.size-a.size));return clusters}
 function scoreCluster(tech,cluster,pos,remaining){if(cluster.tickets.some(t=>!techCanTicket(tech,t)))return -99999;let d=km(pos.lat,pos.lng,cluster.lat,cluster.lng);let areaOk=!tech.areas.length||cluster.areas.some(a=>tech.areas.includes(a));let avgLearn=cluster.tickets.reduce((a,t)=>a+learnBonus(tech,t),0)/Math.max(1,cluster.tickets.length);let capacityPenalty=(cluster.size>remaining&&!cluster.lock)?9999:0;let groupedBonus=(cluster.size-1)*state.rules.pesoDistancia*1.8;let lockedBonus=cluster.lock?state.rules.pesoPrioridade*3:0;let s=0;s+=Math.min(10,cluster.aging)*state.rules.pesoAging;s+=nivelScore(cluster.nivel)*state.rules.pesoNivel;s+=(cluster.prioridade?1:0)*state.rules.pesoPrioridade;s+=Math.max(0,12-d)*state.rules.pesoDistancia;s+=(areaOk?1:-1)*state.rules.pesoArea;s+=avgLearn*state.rules.pesoAprendizado;s+=groupedBonus+lockedBonus-capacityPenalty;return s}
 function orderClusterTickets(cluster,pos){return cluster.tickets.slice().sort((a,b)=>{let da=km(pos.lat,pos.lng,a.lat,a.lng),db=km(pos.lat,pos.lng,b.lat,b.lng);if(Math.abs(da-db)>0.05)return da-db;if(b.prioridade!==a.prioridade)return Number(b.prioridade)-Number(a.prioridade);return (b.aging||0)-(a.aging||0)})}
-function generateRoutes(){let b=getBase();let date=$('#dataOperacao').value||todayISO();let limit=num($('#limiteChamados').value,8);state.tickets.forEach(t=>{t.alocado=false;t.grupoRota='';t.distAnterior=0;t.scoreRota=0});let active=state.techs.filter(t=>low(t.status).includes('ativo')&&!state.absent.includes(t.id));active.sort((a,b)=>a.nome.localeCompare(b.nome));let clusters=buildTicketClusters();let routes=[];for(const tech of active){let useBase=$('#modoOrigem').value==='base'||tech.origemTipo.includes('Base');let origem=useBase?{lat:b.lat,lng:b.lng,label:b.nome,tipo:'Base Lapa'}:{lat:tech.lat,lng:tech.lng,label:tech.endereco||tech.nome,tipo:'Endereço técnico'};let pos={lat:origem.lat,lng:origem.lng};let rota=[],totalKm=0,totalScore=0,clusterCount=0;let cap=Math.min(limit,tech.capacidade||limit);while(rota.length<cap){let remaining=cap-rota.length;let candidates=clusters.filter(c=>!c.done).map(c=>({c,s:scoreCluster(tech,c,pos,remaining),d:km(pos.lat,pos.lng,c.lat,c.lng)})).filter(x=>x.s>-9999).sort((a,b)=>b.s-a.s);if(!candidates.length)break;let best=candidates[0];if(totalKm+best.d>150&&rota.length)break;let ordered=orderClusterTickets(best.c,pos);let groupId=best.c.id;for(const t of ordered){let d=km(pos.lat,pos.lng,t.lat,t.lng);t.alocado=true;t.grupoRota=groupId;t.grupoTipo=best.c.type;t.distAnterior=d;t.scoreRota=best.s;rota.push(t);totalKm+=d;totalScore+=best.s/Math.max(1,best.c.size);pos={lat:t.lat,lng:t.lng}}best.c.done=true;clusterCount++;}
+function generateRoutes(){let b=getBase();let date=$('#dataOperacao').value||todayISO();let limit=num($('#limiteChamados').value,8);state.tickets.forEach(t=>{t.alocado=false;t.grupoRota='';t.distAnterior=0;t.scoreRota=0});let active=state.techs.filter(t=>isActiveStatus(t.status)&&!state.absent.includes(t.id));active.sort((a,b)=>a.nome.localeCompare(b.nome));let clusters=buildTicketClusters();let routes=[];for(const tech of active){let useBase=$('#modoOrigem').value==='base'||tech.origemTipo.includes('Base');let origem=useBase?{lat:b.lat,lng:b.lng,label:b.nome,tipo:'Base Lapa'}:{lat:tech.lat,lng:tech.lng,label:tech.endereco||tech.nome,tipo:'Endereço técnico'};let pos={lat:origem.lat,lng:origem.lng};let rota=[],totalKm=0,totalScore=0,clusterCount=0;let cap=Math.min(limit,tech.capacidade||limit);while(rota.length<cap){let remaining=cap-rota.length;let candidates=clusters.filter(c=>!c.done).map(c=>({c,s:scoreCluster(tech,c,pos,remaining),d:km(pos.lat,pos.lng,c.lat,c.lng)})).filter(x=>x.s>-9999).sort((a,b)=>b.s-a.s);if(!candidates.length)break;let best=candidates[0];if(totalKm+best.d>150&&rota.length)break;let ordered=orderClusterTickets(best.c,pos);let groupId=best.c.id;for(const t of ordered){let d=km(pos.lat,pos.lng,t.lat,t.lng);t.alocado=true;t.grupoRota=groupId;t.grupoTipo=best.c.type;t.distAnterior=d;t.scoreRota=best.s;rota.push(t);totalKm+=d;totalScore+=best.s/Math.max(1,best.c.size);pos={lat:t.lat,lng:t.lng}}best.c.done=true;clusterCount++;}
     if(rota.length){routes.push({id:'rota_'+Date.now()+'_'+routes.length,date,techId:tech.id,tecnico:tech.nome,origem,rota,totalKm,totalScore,clusterCount,cor:COLORS[routes.length%COLORS.length],tempoDesloc:(totalKm/Math.max(1,num($('#velocidade').value,28)))*60,tempoAtend:rota.length*state.rules.tempoAtendimentoMin})}}
   state.routes=routes;save();renderAll();switchScreen('rotas');drawRoutes()}
 function renderAll(){renderPills();renderMetrics();renderDiag();renderTechs();renderRules();renderRoutes();renderLearning();drawRoutes()}
 function renderPills(){let txt=`${state.techs.length} técnicos • ${state.tickets.length} chamados • ${state.routes.length} rotas`;$('#pillDados').textContent=state.techs.length||state.tickets.length?txt:'Sem dados';$('#pillDados').className=state.techs.length&&state.tickets.length?'pill oktxt':'pill warntxt'}
 function renderMetrics(){let n1=state.tickets.filter(t=>t.nivel==='N1').length,n2=state.tickets.filter(t=>t.nivel==='N2').length,n3=state.tickets.filter(t=>t.nivel==='N3').length,sem=state.techs.filter(t=>t.origemTipo.includes('Base')).length,nao=state.tickets.filter(t=>!t.alocado).length;let kmTotal=state.routes.reduce((a,r)=>a+r.totalKm,0);$('#metrics').innerHTML=[['Técnicos carregados',state.techs.length],['Saindo da base Lapa',sem],['Chamados válidos',state.tickets.length],['N1 / N2 / N3',`${n1} / ${n2} / ${n3}`],['Rotas geradas',state.routes.length],['Não alocados',nao],['Distância estimada',kmTotal.toFixed(1)+' km']].map(m=>`<div class="metric"><span>${m[0]}</span><b>${m[1]}</b></div>`).join('')}
 function renderDiag(){let invalid='';if(!state.techs.length)invalid+='<div class="item"><span class="chip warntxt">Atenção</span><strong>Técnicos não carregados</strong><small>Carregue a planilha de técnicos.</small></div>';if(!state.tickets.length)invalid+='<div class="item"><span class="chip warntxt">Atenção</span><strong>Chamados não carregados</strong><small>Carregue o relatório de não concluídos. O sistema agora detecta o cabeçalho na linha 4.</small></div>';if(state.techs.length&&state.tickets.length)invalid+='<div class="item"><span class="chip oktxt">OK</span><strong>Arquivos prontos</strong><small>Dados normalizados e prontos para roteirização.</small></div>';let sem=state.techs.filter(t=>t.origemTipo.includes('Base')).length;if(sem)invalid+=`<div class="item"><span class="chip bluetxt">Base Lapa</span><strong>${sem} técnico(s) sem coordenada</strong><small>Serão roteirizados saindo da base operacional padrão.</small></div>`;$('#diag').innerHTML=invalid}
-function renderTechs(){let q=low($('#buscaTec')?.value||'');let arr=state.techs.filter(t=>!q||low(t.nome+' '+t.endereco+' '+t.areas.join(' ')+' '+t.perfil+' '+t.placa).includes(q));$('#tabTec').innerHTML='<thead><tr><th>Usar</th><th>Técnico</th><th>Origem</th><th>Perfil</th><th>Cap.</th><th>Ações</th></tr></thead><tbody>'+arr.map(t=>`<tr><td><input type="checkbox" ${state.absent.includes(t.id)?'':'checked'} onchange="toggleAbsent('${esc(t.id)}',this.checked)"></td><td><b>${esc(t.nome)}</b><br><span class="mini">Placa: ${esc(t.placa||'-')}</span></td><td><span class="chip ${t.origemTipo.includes('Base')?'warntxt':'oktxt'}">${esc(t.origemTipo)}</span><br><span class="mini">${esc(t.endereco||getBase().endereco)}</span><br><span class="mini">${num(t.lat).toFixed(5)}, ${num(t.lng).toFixed(5)}</span></td><td>${esc(t.perfil)}<br><span class="mini">${esc(t.areas.join(', ')||'área automática')}</span></td><td>${t.capacidade}</td><td><div class="tech-actions"><button class="btn" type="button" onclick="editTechnician('${esc(t.id)}')">Editar</button><button class="btn warn" type="button" onclick="forceTechBase('${esc(t.id)}')">Base</button></div></td></tr>`).join('')+'</tbody>';let sem=state.techs.filter(t=>t.origemTipo.includes('Base')).length,com=state.techs.length-sem;$('#origemResumo').innerHTML=`<div class="item"><strong>${com} com endereço/coordenada</strong><small>Saem da origem da planilha quando o modo automático estiver ativo.</small></div><div class="item"><strong>${sem} usando base Lapa</strong><small>Sem endereço ou sem latitude/longitude válida, ou ajustados manualmente para usar a base.</small></div><div class="item"><strong>${state.absent.length} ausentes/desmarcados</strong><small>Não entram na geração da rota.</small></div>`}
+function statusInfo(t){let inactive=!isActiveStatus(t.status);let absent=state.absent.includes(t.id);if(inactive)return {label:t.status||'Inativo',cls:'risktxt',dot:'inativo',row:'tech-row-inactive'};if(absent)return {label:'Ausente hoje',cls:'warntxt',dot:'ausente',row:'tech-row-absent'};return {label:'Ativo na rota',cls:'oktxt',dot:'',row:''}}
+function refreshAreaFilter(){let sel=$('#filtroAreaTec');if(!sel)return;let current=sel.value||'todas';let areas=[...new Set(state.techs.flatMap(t=>t.areas&&t.areas.length?t.areas:['Sem área definida']))].sort((a,b)=>a.localeCompare(b));sel.innerHTML='<option value="todas">Todas as áreas</option>'+areas.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');sel.value=areas.includes(current)?current:'todas'}
+function renderTechs(){
+  refreshAreaFilter();
+  let q=low($('#buscaTec')?.value||''), fs=$('#filtroStatusTec')?.value||'todos', fa=$('#filtroAreaTec')?.value||'todas';
+  let ativos=state.techs.filter(t=>isActiveStatus(t.status)).length;
+  let inativos=state.techs.length-ativos;
+  let ausentes=state.absent.length;
+  let base=state.techs.filter(t=>t.origemTipo.includes('Base')).length;
+  if($('#techKpis'))$('#techKpis').innerHTML=[['Total',state.techs.length],['Ativos',ativos],['Inativos',inativos],['Ausentes hoje',ausentes],['Base Lapa',base]].map(m=>`<div class="tech-kpi"><span>${m[0]}</span><b>${m[1]}</b></div>`).join('');
+  let arr=state.techs.filter(t=>{
+    let txt=low(t.nome+' '+t.endereco+' '+t.areas.join(' ')+' '+t.perfil+' '+t.placa+' '+t.status);
+    if(q&&!txt.includes(q))return false;
+    if(fa!=='todas'&&!(t.areas||[]).includes(fa))return false;
+    let isAtivo=isActiveStatus(t.status), isAusente=state.absent.includes(t.id), isBase=t.origemTipo.includes('Base');
+    if(fs==='ativos'&&!isAtivo)return false;
+    if(fs==='inativos'&&isAtivo)return false;
+    if(fs==='ausentes'&&!isAusente)return false;
+    if(fs==='base'&&!isBase)return false;
+    return true;
+  });
+  $('#tabTec').innerHTML='<thead><tr><th>Usar hoje</th><th>Técnico</th><th>Status</th><th>Origem</th><th>Perfil/Área</th><th>Cap.</th><th>Ações</th></tr></thead><tbody>'+arr.map(t=>{let st=statusInfo(t);let isAtivo=isActiveStatus(t.status);return `<tr class="${st.row}"><td><input type="checkbox" ${state.absent.includes(t.id)?'':'checked'} ${isAtivo?'':'disabled'} title="Disponível para a rota de hoje" onchange="toggleAbsent('${esc(t.id)}',this.checked)"></td><td><b>${esc(t.nome)}</b><br><span class="mini">Placa: ${esc(t.placa||'-')}</span><br><span class="mini">Matrícula: ${esc(t.matricula||'-')}</span></td><td><span class="chip ${st.cls}"><i class="status-dot ${st.dot}"></i>${esc(st.label)}</span><div class="tech-status-actions" style="margin-top:7px"><button class="btn xs ${isAtivo?'danger':'ok'}" type="button" onclick="setTechStatus('${esc(t.id)}','${isAtivo?'Inativo':'Ativo'}')">${isAtivo?'Inativar':'Ativar'}</button></div></td><td><span class="chip ${t.origemTipo.includes('Base')?'warntxt':'oktxt'}">${esc(t.origemTipo)}</span><br><span class="mini">${esc(t.endereco||getBase().endereco)}</span><br><span class="mini">${num(t.lat).toFixed(5)}, ${num(t.lng).toFixed(5)}</span></td><td>${esc(t.perfil)}<br><span class="mini">${esc(t.areas.join(', ')||'área automática')}</span></td><td>${t.capacidade}</td><td><div class="tech-actions"><button class="btn xs" type="button" onclick="editTechnician('${esc(t.id)}')">Editar</button><button class="btn xs warn" type="button" onclick="forceTechBase('${esc(t.id)}')">Base</button></div></td></tr>`}).join('')+'</tbody>';
+  let sem=base,com=state.techs.length-sem;
+  let disponiveis=state.techs.filter(t=>isActiveStatus(t.status)&&!state.absent.includes(t.id)).length;
+  $('#origemResumo').innerHTML=`<div class="item"><span class="chip oktxt">Disponíveis</span><strong>${disponiveis} entram na rota</strong><small>São técnicos ativos e marcados para usar hoje.</small></div><div class="item"><strong>${ativos} ativos / ${inativos} inativos</strong><small>Inativos ficam bloqueados até serem ativados novamente.</small></div><div class="item"><strong>${com} com endereço/coordenada</strong><small>Saem da origem da planilha quando o modo automático estiver ativo.</small></div><div class="item"><strong>${sem} usando base Lapa</strong><small>Sem endereço ou coordenada válida, ou ajustados manualmente para usar a base.</small></div><div class="item"><strong>${ausentes} ausentes/desmarcados</strong><small>Não entram na geração da rota de hoje, mas continuam ativos no cadastro.</small></div>`
+}
 function openTechModal(){const m=$('#techModal');m.classList.add('open');m.setAttribute('aria-hidden','false')}
 function closeTechModal(){const m=$('#techModal');m.classList.remove('open');m.setAttribute('aria-hidden','true')}
 function editTechnician(id){const t=state.techs.find(x=>x.id===id);if(!t)return;$('#editTechId').value=t.id;$('#editNome').value=t.nome||'';$('#editMatricula').value=t.matricula||'';$('#editStatus').value=t.status||'Ativo';$('#editPlaca').value=t.placa||'';$('#editEndereco').value=t.endereco||'';$('#editLat').value=t.origemTipo&&t.origemTipo.includes('Base')?'':(t.lat??'');$('#editLng').value=t.origemTipo&&t.origemTipo.includes('Base')?'':(t.lng??'');$('#editPerfil').value=t.perfil||'';$('#editCapacidade').value=t.capacidade||10;$('#editInicio').value=t.inicio||'08:00';$('#editFim').value=t.fim||'18:00';$('#editAreas').value=(t.areas||[]).join(', ');$('#editN1').value=String(!!t.permiteN1);$('#editN2').value=String(!!t.permiteN2);$('#editN3').value=String(!!t.permiteN3);$('#editObs').value=t.obs||'';openTechModal()}
@@ -188,6 +245,16 @@ function saveTechEdit(){const id=$('#editTechId').value;const idx=state.techs.fi
 function forceTechBase(id){const idx=state.techs.findIndex(x=>x.id===id);if(idx<0)return;let b=getBase();state.techs[idx]={...state.techs[idx],lat:b.lat,lng:b.lng,origemTipo:'Base Lapa por ajuste/manual'};state.routes=[];save();renderAll()}
 function useBaseInModal(){let b=getBase();$('#editEndereco').value=b.endereco;$('#editLat').value='';$('#editLng').value=''}
 function deleteTech(){const id=$('#editTechId').value;if(!id)return;if(!confirm('Remover este técnico apenas da sessão atual?'))return;state.techs=state.techs.filter(t=>t.id!==id);state.absent=state.absent.filter(x=>x!==id);state.routes=[];save();renderAll();closeTechModal()}
+function setTechStatus(id,status){
+  const idx=state.techs.findIndex(x=>x.id===id);if(idx<0)return;
+  state.techs[idx].status=status;
+  if(status!=='Ativo'&&!state.absent.includes(id))state.absent.push(id);
+  if(status==='Ativo')state.absent=state.absent.filter(x=>x!==id);
+  state.routes=[];save();renderAll();
+}
+function setAllTechStatus(status){state.techs.forEach(t=>t.status=status);if(status==='Ativo')state.absent=[];else state.absent=[...new Set(state.techs.map(t=>t.id))];state.routes=[];save();renderAll()}
+function markAllToday(){state.absent=[];state.techs.forEach(t=>{if(!isActiveStatus(t.status))t.status='Ativo'});state.routes=[];save();renderAll()}
+window.setTechStatus=setTechStatus;
 window.editTechnician=editTechnician;window.forceTechBase=forceTechBase;
 function toggleAbsent(id,checked){if(checked)state.absent=state.absent.filter(x=>x!==id);else if(!state.absent.includes(id))state.absent.push(id);save();renderAll()}
 window.toggleAbsent=toggleAbsent;
@@ -279,7 +346,7 @@ function switchScreen(s){$$('.screen').forEach(x=>x.classList.remove('active'));
 async function onTechFile(e){let rows=await readExcel(e.target.files[0]);state.techs=rows.map(normalizeTech).filter(Boolean);$('#okTech').innerHTML=`<span class="chip oktxt">${state.techs.length} técnicos carregados</span>`;renderAll()}
 async function onTicketFile(e){let rows=await readExcel(e.target.files[0]);state.tickets=rows.map(normalizeTicket).filter(Boolean);$('#okTicket').innerHTML=`<span class="chip oktxt">${state.tickets.length} chamados válidos com coordenada</span>`;state.routes=[];renderAll()}
 async function importLearning(e){const file=e.target.files&&e.target.files[0];if(!file)return;try{const text=await file.text();const data=JSON.parse(text);if(!Array.isArray(data))throw new Error('JSON precisa conter uma lista de registros.');state.learn=data.filter(x=>x&&x.date&&x.techId).map(x=>({date:x.date,techId:x.techId,tecnico:x.tecnico||'',area:x.area||'Todas',qtd:num(x.qtd,0),km:num(x.km,0),eficiencia:num(x.eficiencia,0),score:num(x.score,0)}));renderLearning();renderAll();alert('Aprendizado importado apenas para a sessão atual.')}catch(err){alert('Não foi possível importar o aprendizado: '+err.message)}finally{e.target.value=''}}
-function bind(){ $('#fileTech').addEventListener('change',onTechFile);$('#fileTicket').addEventListener('change',onTicketFile);$('#btnGerar').onclick=generateRoutes;$('#btnGerar2').onclick=generateRoutes;$('#btnTodas').onclick=drawRoutes;$('#btnCSV').onclick=exportCSV;$('#btnLimpar').onclick=()=>{if(confirm('Limpar todos os dados apenas da sessão atual?')){state.techs=[];state.tickets=[];state.routes=[];state.absent=[];state.learn=[];state.selectedRoute=null;$('#fileTech').value='';$('#fileTicket').value='';$('#okTech').textContent='';$('#okTicket').textContent='';renderAll();drawRoutes();switchScreen('dash')}};$('#btnRegra').onclick=()=>{$$('[data-rule]').forEach(i=>state.rules[i.dataset.rule]=num(i.value,state.rules[i.dataset.rule]));renderAll();alert('Regras aplicadas apenas nesta sessão.')};$('#buscaTec').addEventListener('input',renderTechs);$('#btnCloseTechModal').onclick=closeTechModal;$('#btnSaveTechEdit').onclick=saveTechEdit;$('#btnUseBaseTech').onclick=useBaseInModal;$('#btnDeleteTech').onclick=deleteTech;$('#techModal').addEventListener('click',e=>{if(e.target.id==='techModal')closeTechModal()});$('#btnExportLearn').onclick=()=>download('aprendizado_roteirizador.json',JSON.stringify(state.learn,null,2));$('#fileLearn').addEventListener('change',importLearning);$('#btnClearLearn').onclick=()=>{if(confirm('Limpar histórico de aprendizado apenas desta sessão?')){state.learn=[];renderLearning();renderAll()}};['baseEndereco','baseLat','baseLng'].forEach(id=>$('#'+id).addEventListener('change',()=>{state.techs=state.techs.map(t=>t.origemTipo&&t.origemTipo.includes('Base')?{...t,lat:getBase().lat,lng:getBase().lng}:t);renderAll()}));$$('#nav button').forEach(b=>b.onclick=()=>switchScreen(b.dataset.screen))}
+function bind(){ $('#fileTech').addEventListener('change',onTechFile);$('#fileTicket').addEventListener('change',onTicketFile);$('#btnGerar').onclick=generateRoutes;$('#btnGerar2').onclick=generateRoutes;$('#btnTodas').onclick=drawRoutes;$('#btnCSV').onclick=exportCSV;$('#btnLimpar').onclick=()=>{if(confirm('Limpar todos os dados apenas da sessão atual?')){state.techs=[];state.tickets=[];state.routes=[];state.absent=[];state.learn=[];state.selectedRoute=null;$('#fileTech').value='';$('#fileTicket').value='';$('#okTech').textContent='';$('#okTicket').textContent='';renderAll();drawRoutes();switchScreen('dash')}};$('#btnRegra').onclick=()=>{$$('[data-rule]').forEach(i=>state.rules[i.dataset.rule]=num(i.value,state.rules[i.dataset.rule]));renderAll();alert('Regras aplicadas apenas nesta sessão.')};$('#buscaTec').addEventListener('input',renderTechs);$('#filtroStatusTec').addEventListener('change',renderTechs);$('#filtroAreaTec').addEventListener('change',renderTechs);$('#btnAtivarTodos').onclick=()=>setAllTechStatus('Ativo');$('#btnInativarAusentes').onclick=()=>{state.absent.forEach(id=>{let t=state.techs.find(x=>x.id===id);if(t)t.status='Inativo'});state.routes=[];renderAll()};$('#btnMarcarTodosHoje').onclick=markAllToday;$('#btnCloseTechModal').onclick=closeTechModal;$('#btnSaveTechEdit').onclick=saveTechEdit;$('#btnUseBaseTech').onclick=useBaseInModal;$('#btnDeleteTech').onclick=deleteTech;$('#techModal').addEventListener('click',e=>{if(e.target.id==='techModal')closeTechModal()});$('#btnExportLearn').onclick=()=>download('aprendizado_roteirizador.json',JSON.stringify(state.learn,null,2));$('#fileLearn').addEventListener('change',importLearning);$('#btnClearLearn').onclick=()=>{if(confirm('Limpar histórico de aprendizado apenas desta sessão?')){state.learn=[];renderLearning();renderAll()}};['baseEndereco','baseLat','baseLng'].forEach(id=>$('#'+id).addEventListener('change',()=>{state.techs=state.techs.map(t=>t.origemTipo&&t.origemTipo.includes('Base')?{...t,lat:getBase().lat,lng:getBase().lng}:t);renderAll()}));$$('#nav button').forEach(b=>b.onclick=()=>switchScreen(b.dataset.screen))}
 window.addEventListener('load',()=>{$('#dataOperacao').value=todayISO();load();bind();initMap();renderAll()});
 </script>
 </body>
